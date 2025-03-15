@@ -4,10 +4,14 @@ let currentPlayer = "X";
 let gameOver = false;
 let againstAI = false;
 
-// Select game mode
+// Start the game with selected mode
 function startGame(mode) {
     againstAI = (mode === "ai");
     resetGame();
+
+    // Hide mode selection, show board
+    document.getElementById("mode-selection").style.display = "none";
+    document.getElementById("game-board").style.display = "block";
 }
 
 // Handle player move
@@ -17,7 +21,7 @@ function makeMove(index) {
         updateBoard();
         let result = checkWinner();
         if (result) {
-            setTimeout(() => alert(result), 200);
+            document.getElementById("status").innerText = result;
             return;
         }
         switchTurn();
@@ -36,6 +40,8 @@ function switchTurn() {
 // AI Move (Random)
 function aiMove() {
     let emptyCells = boardState.map((val, index) => (val === "" ? index : null)).filter(v => v !== null);
+    if (emptyCells.length === 0) return;
+    
     let randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
     makeMove(randomIndex);
 }
@@ -69,6 +75,10 @@ function resetGame() {
     boardState = ["", "", "", "", "", "", "", "", ""];
     currentPlayer = "X";
     gameOver = false;
+    
+    document.getElementById("mode-selection").style.display = "block";
+    document.getElementById("game-board").style.display = "none";
+    
     updateBoard();
 }
 
