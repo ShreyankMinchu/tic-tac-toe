@@ -1,94 +1,93 @@
-// Game variables
-let boardState = ["", "", "", "", "", "", "", "", ""];
-let currentPlayer = "X";
-let gameOver = false;
-let againstAI = false;
+document.addEventListener("DOMContentLoaded", () => {
+    const cells = document.querySelectorAll(".cell");
+    const status = document.getElementById("status");
+    const restartButton = document.getElementById("restart");
+    const twoPlayerButton = document.getElementById("twoPlayer");
+    const aiButton = document.getElementById("playAI");
 
-// Start the game with selected mode
-function startGame(mode) {
-    againstAI = (mode === "ai");
-    resetGame();
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "X";
+    let gameActive = true;
+    let againstAI = false;
 
-    // Hide mode selection, show board
-    document.getElementById("mode-selection").style.display = "none";
-    document.getElementById("game-board").style.display = "block";
-}
-
-// Handle player move
-function makeMove(index) {
-    if (boardState[index] === "" && !gameOver) {
-        boardState[index] = currentPlayer;
-        updateBoard();
-        let result = checkWinner();
-        if (result) {
-            document.getElementById("status").innerText = result;
-            return;
-        }
-        switchTurn();
-    }
-}
-
-// Switch turns or let AI play
-function switchTurn() {
-    currentPlayer = (currentPlayer === "X") ? "O" : "X";
-
-    if (againstAI && currentPlayer === "O" && !gameOver) {
-        setTimeout(aiMove, 500);
-    }
-}
-
-// AI Move (Random)
-function aiMove() {
-    let emptyCells = boardState.map((val, index) => (val === "" ? index : null)).filter(v => v !== null);
-    if (emptyCells.length === 0) return;
-    
-    let randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-    makeMove(randomIndex);
-}
-
-// Check for winner or draw
-function checkWinner() {
     const winningCombinations = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
         [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-        [0, 4, 8], [2, 4, 6] // Diagonals
+        [0, 4, 8], [2, 4, 6]             // Diagonals
     ];
 
-    for (const combination of winningCombinations) {
-        const [a, b, c] = combination;
-        if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
-            gameOver = true;
-            return boardState[a] + " Wins!";
+    function checkWinner() {
+        for (let combination of winningCombinations) {
+            let [a, b, c] = combination;
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                status.innerText = `${board[a]} Wins!`;
+                gameActive = false;
+                return true;
+            }
+        }
+        if (!board.includes("")) {
+            status.innerText = "It's a Draw!";
+            gameActive = false;
+            return true;
+        }
+        return false;
+    }
+
+    function aiMove() {
+        if (!gameActive) return;
+
+        let emptyCells = board.map((val, index) => (val === "" ? index : null)).filter(val => val !== null);
+        let randomMove = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+        if (randomMove !== undefined) {
+            board[randomMove] = "O";
+            cells[randomMove].innerText = "O";
+            cells[randomMove].style.color = "red";
+            checkWinner();
+            currentPlayer = "X";
+            status.innerText = "Your Turn (X)";
         }
     }
 
-    if (!boardState.includes("")) {
-        gameOver = true;
-        return "Draw!";
+    function handleCellClick(event) {
+        let index = event.target.getAttribute("data-index");
+
+        if (!gameActive || board[index] !== "") return;
+
+        board[index] = currentPlayer;
+        event.target.innerText = currentPlayer;
+        event.target.style.color = currentPlayer === "X" ? "cyan" : "red";
+
+        if (checkWinner()) return;
+
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        status.innerText = `Your Turn (${currentPlayer})`;
+
+        if (againstAI && currentPlayer === "O") {
+            setTimeout(aiMove, 500);
+        }
     }
 
-    return null;
-}
+    function resetGame() {
+        board = ["", "", "", "", "", "", "", "", ""];
+        currentPlayer = "X";
+        gameActive = true;
+        status.innerText = "Your Turn (X)";
+        cells.forEach(cell => cell.innerText = "");
+    }
 
-// Reset the game
-function resetGame() {
-    boardState = ["", "", "", "", "", "", "", "", ""];
-    currentPlayer = "X";
-    gameOver = false;
-    
-    document.getElementById("mode-selection").style.display = "block";
-    document.getElementById("game-board").style.display = "none";
-    
-    updateBoard();
-}
+    function startTwoPlayer() {
+        resetGame();
+        againstAI = false;
+    }
 
-// Update UI board
-function updateBoard() {
-    let cells = document.querySelectorAll(".cell");
-    cells.forEach((cell, index) => {
-        cell.innerText = boardState[index];
-    });
+    function startAI() {
+        resetGame();
+        againstAI = true;
+    }
 
-    let result = checkWinner();
-    document.getElementById("status").innerText = result ? result : `Your Turn (${currentPlayer})`;
-}
+    cells.forEach(cell => cell.addEventListener("click", handleCellClick));
+    restartButton.addEventListener("click", resetGame);
+    twoPlayerButton.addEventListener("click", startTwoPlayer);
+    aiButton.addEventListener("click", startAI);
+});
