@@ -1,101 +1,100 @@
-const cells = document.querySelectorAll('.cell');
-const statusText = document.getElementById('status');
-const resetButton = document.getElementById('reset');
-let board = ["", "", "", "", "", "", "", "", ""];
-let gameActive = true;
-let currentPlayer = "X"; // You are X, AI is O
+const board = document.getElementById("board");
+const statusText = document.getElementById("status");
+const restartBtn = document.getElementById("restart");
+const modeSelection = document.getElementById("mode-selection");
 
-const winPatterns = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8], 
-    [0, 3, 6], [1, 4, 7], [2, 5, 8], 
-    [0, 4, 8], [2, 4, 6]
-];
+let boardState = ["", "", "", "", "", "", "", "", ""];
+let currentPlayer = "X";
+let gameMode = ""; 
+let gameActive = false;
 
-cells.forEach(cell => {
-    cell.addEventListener("click", () => {
-        if (!gameActive || cell.textContent !== "") return;
-        
-        const index = cell.getAttribute("data-index");
-        board[index] = currentPlayer;
-        cell.textContent = currentPlayer;
-        cell.classList.add("taken");
+function startGame(mode) {
+    gameMode = mode;
+    board.innerHTML = "";
+    boardState = ["", "", "", "", "", "", "", "", ""];
+    currentPlayer = "X";
+    gameActive = true;
+    statusText.textContent = `Your Turn (${currentPlayer})`;
+    board.classList.remove("hidden");
+    restartBtn.classList.remove("hidden");
+    modeSelection.classList.add("hidden");
 
-        if (checkWinner(currentPlayer)) {
-            statusText.textContent = `You Win! 🎉`;
-            highlightWinner();
-            gameActive = false;
-        } else if (!board.includes("")) {
-            statusText.textContent = "It's a Draw!";
-            gameActive = false;
-        } else {
-            currentPlayer = "O";
-            statusText.textContent = "AI's Turn...";
-            setTimeout(aiMove, 500);
-        }
-    });
-});
+    for (let i = 0; i < 9; i++) {
+        let cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index = i;
+        cell.addEventListener("click", handleMove);
+        board.appendChild(cell);
+    }
+}
 
-function aiMove() {
-    let bestMove = getBestMove();
-    board[bestMove] = "O";
-    cells[bestMove].textContent = "O";
-    cells[bestMove].classList.add("taken");
+function handleMove(event) {
+    const index = event.target.dataset.index;
+    if (!gameActive || boardState[index] !== "") return;
 
-    if (checkWinner("O")) {
-        statusText.textContent = `AI Wins! 🤖`;
-        highlightWinner();
+    boardState[index] = currentPlayer;
+    event.target.textContent = currentPlayer;
+
+    if (checkWin()) {
+        statusText.textContent = `${currentPlayer} Wins!`;
         gameActive = false;
-    } else if (!board.includes("")) {
+        return;
+    }
+
+    if (!boardState.includes("")) {
         statusText.textContent = "It's a Draw!";
         gameActive = false;
-    } else {
-        currentPlayer = "X";
-        statusText.textContent = "Your Turn (X)";
+        return;
+    }
+
+    currentPlayer = currentPlayer === "X" ? "O" : "X";
+    statusText.textContent = `Your Turn (${currentPlayer})`;
+
+    if (gameMode === "ai" && currentPlayer === "O") {
+        setTimeout(aiMove, 500);
     }
 }
 
-function getBestMove() {
-    for (let pattern of winPatterns) {
-        let [a, b, c] = pattern;
-        if (board[a] === "O" && board[b] === "O" && board[c] === "") return c;
-        if (board[a] === "O" && board[c] === "O" && board[b] === "") return b;
-        if (board[b] === "O" && board[c] === "O" && board[a] === "") return a;
+function aiMove() {
+    let emptyCells = boardState.map((val, idx) => (val === "" ? idx : null)).filter(val => val !== null);
+    let randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+    boardState[randomIndex] = "O";
+    document.querySelector(`.cell[data-index="${randomIndex}"]`).textContent = "O";
+
+    if (checkWin()) {
+        statusText.textContent = `O Wins!`;
+        gameActive = false;
+        return;
     }
 
-    for (let pattern of winPatterns) {
-        let [a, b, c] = pattern;
-        if (board[a] === "X" && board[b] === "X" && board[c] === "") return c;
-        if (board[a] === "X" && board[c] === "X" && board[b] === "") return b;
-        if (board[b] === "X" && board[c] === "X" && board[a] === "") return a;
+    if (!boardState.includes("")) {
+        statusText.textContent = "It's a Draw!";
+        gameActive = false;
+        return;
     }
 
-    let emptyCells = board.map((val, index) => val === "" ? index : null).filter(val => val !== null);
-    return emptyCells[Math.floor(Math.random() * emptyCells.length)];
-}
-
-function checkWinner(player) {
-    return winPatterns.some(pattern => {
-        return pattern.every(index => board[index] === player);
-    });
-}
-
-function highlightWinner() {
-    winPatterns.forEach(pattern => {
-        if (pattern.every(index => board[index] === currentPlayer)) {
-            pattern.forEach(index => cells[index].classList.add("win"));
-        }
-    });
-}
-
-resetButton.addEventListener("click", resetGame);
-
-function resetGame() {
-    board = ["", "", "", "", "", "", "", "", ""];
-    gameActive = true;
     currentPlayer = "X";
-    statusText.textContent = "Your Turn (X)";
-    cells.forEach(cell => {
-        cell.textContent = "";
-        cell.classList.remove("taken", "win");
+    statusText.textContent = `Your Turn (X)`;
+}
+
+function checkWin() {
+    const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+    ];
+    
+    return winPatterns.some(pattern => {
+        const [a, b, c] = pattern;
+        return boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c];
     });
+}
+
+function restartGame() {
+    gameActive = false;
+    board.classList.add("hidden");
+    restartBtn.classList.add("hidden");
+    modeSelection.classList.remove("hidden");
+    statusText.textContent = "";
 }
